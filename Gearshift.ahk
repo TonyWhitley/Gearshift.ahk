@@ -11,7 +11,7 @@
 ; This is a script for https://autohotkey.com/
 ; Install that then double click on Gearshift.ahk before loading rF2.
 ;
-; V1.0 tjw 2017-12-10
+; V1.1 tjw 2017-12-10
 
 #Persistent  ; Keep this script running until the user explicitly exits it.
 
@@ -24,8 +24,8 @@
 ; Shifter R = Joy15
 
 JoystickNumber =    1
-ClutchEngaged  =    90 ; 0 - 100 is the point in the travel where the clutch engages
-doubleDeclutch =    true    ; Not yet implemented
+ClutchEngaged  =    90      ; (0 - 100) the point in the travel where the clutch engages
+doubleDeclutch =    false   ; Not yet implemented
 reshift =           true    ; If true then neutral has to be selected before
                             ; retrying failed change. If false then just have
                             ; to de-clutch
@@ -34,8 +34,9 @@ reshift =           true    ; If true then neutral has to be selected before
 
 ; Nothing much to twiddle with from here on
 
-global debug =      1       ; 0, 1, 2 or 3
+global debug =      0       ; 0, 1, 2 or 3
 ;AutoRepeat = 0
+;Neutral        =    Numpad0 ; The key used to force neutral, whatever the shifter says
 
 ; Gear change events
 global clutchDisengage         = 100
@@ -94,13 +95,15 @@ graunch2()
 gearStateMachine(event)
     {
     ; Gear change states
-    static idle                   = 90
+    static neutral                = 90
     static clutchDown             = 91
-    static clutchDownGearSelected = 92
-    static inGear                 = 93
-    static graunching             = 94
+    static waitForDoubleDeclutchUp= 92
+    static clutchDownGearSelected = 93
+    static inGear                 = 94
+    static graunching             = 95
+    static graunchingClutchDown   = 96
 
-    static gearState = idle
+    static gearState = neutral
 
     if debug >= 3
         msgBox gearState /%gearState%/ event /%event%/
@@ -118,7 +121,7 @@ gearStateMachine(event)
             msgBox gearStateMachine() invalid event %event%
         }
 
-    if      gearState = %idle%
+    if      gearState = %neutral%
         {
         if event = %clutchDisengage%
             {
@@ -140,11 +143,25 @@ gearStateMachine(event)
             }
         else if event = %clutchEngage%
             {
-                gearState = %idle%
+                gearState = %neutral%
                 if debug >= 1
                     Send, {U}
             }
         }
+    else if gearState = %waitForDoubleDeclutchUp%
+        {
+        if event = %clutchEngage%
+            {
+                gearState = %Neutral%
+                if debug >= 2
+                    msgBox Double declutch spin up the box
+            }
+        else if event = %gearSelect%
+            {
+                graunch()
+                gearState = %graunching%
+            }
+    }
     else if gearState = %clutchDownGearSelected%
         {
         if event = %clutchEngage%
@@ -155,14 +172,17 @@ gearStateMachine(event)
             }
         else if event = %gearDeselect%
             {
-                gearState = %clutchDown%
+                if doubleDeclutch
+                    gearState = %waitForDoubleDeclutchUp%
+                else
+                    gearState = %clutchDown%
             }
         }
     else if gearState = %inGear%
         {
         if event = %gearDeselect%
             {
-                gearState = %idle%
+                gearState = %neutral%
                 if debug >= 2
                     msgBox Knocked out of gear
             }
@@ -181,6 +201,10 @@ gearStateMachine(event)
                             Send, {R}
                         gearState = %clutchDownGearSelected%
                     }
+                else
+                    {
+                        gearState = %graunchingClutchDown%
+                    }
                 graunchStop()
                 if debug >= 1
                     Send, {G}
@@ -191,13 +215,26 @@ gearStateMachine(event)
             }
         else if event = %gearDeselect%
             {
-                gearState = %idle%
+                gearState = %neutral%
                 graunchStop()
             }
         else if event = %gearSelect%
             {
                 graunchStop()
                 graunch()   ; graunch again
+            }
+        }
+    else if gearState = %graunchingClutchDown%
+        {
+        if event = %clutchEngage%
+            {
+                graunch()   ; graunch again
+                gearState = %graunching%
+            }
+        else if event = %gearDeselect%
+            {
+                gearState = %clutchDown%
+                graunchStop()
             }
         }
     else
@@ -227,7 +264,7 @@ WatchAxis:
     ClutchPrev = %Clutch%
 
 
-    GetKeyState, Joy9, %JoystickNumber%Joy9
+    GetKeyState, Joy9,  %JoystickNumber%Joy9
     GetKeyState, Joy10, %JoystickNumber%Joy10
     GetKeyState, Joy11, %JoystickNumber%Joy11
     GetKeyState, Joy12, %JoystickNumber%Joy12
@@ -235,7 +272,7 @@ WatchAxis:
     GetKeyState, Joy14, %JoystickNumber%Joy14
     GetKeyState, Joy15, %JoystickNumber%Joy15
 
-    KeyToHoldDownPrev = %KeyToHoldDown%  ; Prev now holds the key that was down before (if vany).
+    KeyToHoldDownPrev = %KeyToHoldDown%  ; Prev now holds the key that was down before (if any).
 
     if       Joy9 = D
         KeyToHoldDown = Numpad1
