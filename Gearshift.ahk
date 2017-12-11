@@ -11,7 +11,7 @@
 ; This is a script for https://autohotkey.com/
 ; Install that then double click on Gearshift.ahk before loading rF2.
 ;
-; V1.1 tjw 2017-12-10
+; V1.2 tjw 2017-12-11
 
 #Persistent  ; Keep this script running until the user explicitly exits it.
 
@@ -23,7 +23,8 @@
 ; Shifter 6 = Joy14
 ; Shifter R = Joy15
 
-JoystickNumber =    1
+ShifterNumber  =    1       ; Shifter port
+ClutchNumber   =    1       ; Clutch port
 ClutchEngaged  =    90      ; (0 - 100) the point in the travel where the clutch engages
 doubleDeclutch =    false   ; Not yet implemented
 reshift =           true    ; If true then neutral has to be selected before
@@ -46,13 +47,13 @@ global gearDeselect            = 103
 
 global graunchCount
 
-SetTimer, WatchAxis, 10
+SetTimer, WatchClutch, 10
 return
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 graunch()
-    {
+    {   # Start the graunch noise and sending "Neutral"
         graunchCount = 0
         graunch2()
         if debug >= 2
@@ -68,16 +69,16 @@ graunchStop()
     }
 
 graunch1()
-    {
+    {   # Send the "Neutral" key release
         Send, {Numpad0 up}
         SetTimer, graunch2, -20
     }
 
 graunch2()
-    {
+    {   # Send the "Neutral" key press
         Send, {Numpad0 down}
         if graunchCount <= 0
-            {
+            {   # Start the noise again
                 SoundPlay, Grind_default.wav
                 graunchCount = 5
             }
@@ -246,11 +247,11 @@ gearStateMachine(event)
     }
 
 
-WatchAxis:
+WatchClutch:
     ; clutch
     Clutch = 1 ; engaged
 
-    GetKeyState, JoyU, %JoystickNumber%JoyU
+    GetKeyState, JoyU, %ClutchNumber%JoyU
     ; JoyU 100 is up, 0 is down to the floor
     if JoyU < %ClutchEngaged%
         Clutch = 0  ; clutch is disengaged
@@ -264,13 +265,13 @@ WatchAxis:
     ClutchPrev = %Clutch%
 
 
-    GetKeyState, Joy9,  %JoystickNumber%Joy9
-    GetKeyState, Joy10, %JoystickNumber%Joy10
-    GetKeyState, Joy11, %JoystickNumber%Joy11
-    GetKeyState, Joy12, %JoystickNumber%Joy12
-    GetKeyState, Joy13, %JoystickNumber%Joy13
-    GetKeyState, Joy14, %JoystickNumber%Joy14
-    GetKeyState, Joy15, %JoystickNumber%Joy15
+    GetKeyState, Joy9,  %ShifterNumber%Joy9
+    GetKeyState, Joy10, %ShifterNumber%Joy10
+    GetKeyState, Joy11, %ShifterNumber%Joy11
+    GetKeyState, Joy12, %ShifterNumber%Joy12
+    GetKeyState, Joy13, %ShifterNumber%Joy13
+    GetKeyState, Joy14, %ShifterNumber%Joy14
+    GetKeyState, Joy15, %ShifterNumber%Joy15
 
     KeyToHoldDownPrev = %KeyToHoldDown%  ; Prev now holds the key that was down before (if any).
 
@@ -311,20 +312,4 @@ WatchAxis:
     SetKeyDelay -1  ; Avoid delays between keystrokes.
     if KeyToHoldDownPrev   ; There is a previous key to release.
         Send, {%KeyToHoldDownPrev% up}  ; Release it.
-    if KeyToHoldDown   ; There is a key to press down.
-        {
-        ;if KeyToHoldDown != Numpad0
-        ;{
-        ;Loop, 10
-        ;{
-        ;    Send, {Numpad0 down}
-        ;    Sleep 100
-        ;    Send, {Numpad0 up}
-        ;    Sleep 20
-        ;    }
-        ;}
-
-        }
-
-
     return
