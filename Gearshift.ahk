@@ -53,7 +53,7 @@ return
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 graunch()
-    {   # Start the graunch noise and sending "Neutral"
+    {   ; Start the graunch noise and sending "Neutral"
         graunchCount = 0
         graunch2()
         if debug >= 2
@@ -69,16 +69,16 @@ graunchStop()
     }
 
 graunch1()
-    {   # Send the "Neutral" key release
+    {   ; Send the "Neutral" key release
         Send, {Numpad0 up}
         SetTimer, graunch2, -20
     }
 
 graunch2()
-    {   # Send the "Neutral" key press
+    {   ; Send the "Neutral" key press
         Send, {Numpad0 down}
         if graunchCount <= 0
-            {   # Start the noise again
+            {   ; Start the noise again
                 SoundPlay, Grind_default.wav
                 graunchCount = 5
             }
