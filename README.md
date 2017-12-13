@@ -7,3 +7,41 @@ and a couple of other tweaks but, for example, other shifters may require editin
 
 # Installation
 Install https://autohotkey.com/ and follow the instructions https://autohotkey.com/docs/FAQ.htm#uac to get past UAC then double click on Gearshift.ahk (Grind_default.wav needs to be in the same folder) before loading rF2. In rF2 map Numpad 0 as "Neutral".
+
+# Configuring
+You have to edit the script to change the way Gearshift is set up
+
+ForwardGears = 6            ; Plus reverse
+Shifter1 = Joy9
+Shifter2 = Joy10
+Shifter3 = Joy11
+Shifter4 = Joy12
+Shifter5 = Joy13
+Shifter6 = Joy14
+ShifterR = Joy15
+ClutchAxis = JoyU           ; R U V or Z
+
+ShifterNumber  =    1       ; Shifter port
+ClutchNumber   =    1       ; Clutch port
+
+TestMode       =    false   ; If true then show shifter and clutch operation
+
+ClutchEngaged  =    90      ; (0 - 100) the point in the travel where the clutch engages
+doubleDeclutch =    false   ; Not yet implemented
+reshift =           true    ; If true then neutral has to be selected before
+                            ; retrying failed change. If false then just have
+                            ; to de-clutch
+
+# Test Mode
+If TestMode = true then Gearshift switches into a test mode where it will display the state of the shifter and clutch as they have been configured, like this
+
+Test Mode
+
+Clutch: 100 engaged
+Gear 1: Selected
+Gear 2: 
+Gear 3: 
+Gear 4: 
+Gear 5: 
+Gear 6: 
+Gear R: 
