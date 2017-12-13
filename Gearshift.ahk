@@ -11,20 +11,25 @@
 ; This is a script for https://autohotkey.com/
 ; Install that then double click on Gearshift.ahk before loading rF2.
 ;
-; V1.2 tjw 2017-12-11
+; V1.3 tjw 2017-12-13
 
 #Persistent  ; Keep this script running until the user explicitly exits it.
 
-; Shifter 1 = Joy9
-; Shifter 2 = Joy10
-; Shifter 3 = Joy11
-; Shifter 4 = Joy12
-; Shifter 5 = Joy13
-; Shifter 6 = Joy14
-; Shifter R = Joy15
+ForwardGears = 6            ; Plus reverse
+Shifter1 = Joy9
+Shifter2 = Joy10
+Shifter3 = Joy11
+Shifter4 = Joy12
+Shifter5 = Joy13
+Shifter6 = Joy14
+ShifterR = Joy15
+ClutchAxis = JoyU           ; R U V or Z
 
 ShifterNumber  =    1       ; Shifter port
 ClutchNumber   =    1       ; Clutch port
+
+TestMode       =    false   ; If true then show shifter and clutch operation
+
 ClutchEngaged  =    90      ; (0 - 100) the point in the travel where the clutch engages
 doubleDeclutch =    false   ; Not yet implemented
 reshift =           true    ; If true then neutral has to be selected before
@@ -35,9 +40,11 @@ reshift =           true    ; If true then neutral has to be selected before
 
 ; Nothing much to twiddle with from here on
 
-global debug =      0       ; 0, 1, 2 or 3
-;AutoRepeat = 0
-;Neutral        =    Numpad0 ; The key used to force neutral, whatever the shifter says
+global debug    =   0       ; 0, 1, 2 or 3
+;AutoRepeat     =   0
+;NeutralBtn     =   Numpad0 ; The key used to force neutral, whatever the shifter says
+
+firstGearJoyButton := SubStr(Shifter1, StrLen("Joy")+1) ; Joy9 -> 9
 
 ; Gear change events
 global clutchDisengage         = 100
@@ -47,7 +54,10 @@ global gearDeselect            = 103
 
 global graunchCount
 
-SetTimer, WatchClutch, 10
+if TestMode = false
+    SetTimer, WatchClutch, 10
+else
+    SetTimer, ShowButtons, 100
 return
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -153,7 +163,7 @@ gearStateMachine(event)
         {
         if event = %clutchEngage%
             {
-                gearState = %Neutral%
+                gearState = %neutral%
                 if debug >= 2
                     msgBox Double declutch spin up the box
             }
@@ -249,45 +259,45 @@ gearStateMachine(event)
 
 WatchClutch:
     ; clutch
-    Clutch = 1 ; engaged
+    ClutchState = 1 ; engaged
 
-    GetKeyState, JoyU, %ClutchNumber%JoyU
-    ; JoyU 100 is up, 0 is down to the floor
-    if JoyU < %ClutchEngaged%
-        Clutch = 0  ; clutch is disengaged
-    if Clutch != %ClutchPrev%
+    GetKeyState, Clutch, %ClutchNumber%%ClutchAxis%
+    ; Clutch 100 is up, 0 is down to the floor
+    if Clutch < %ClutchEngaged%
+        ClutchState = 0  ; clutch is disengaged
+    if ClutchState != %ClutchPrev%
         {
-        if Clutch = 0
+        if ClutchState = 0
             gearStateMachine(clutchDisengage)
         else
             gearStateMachine(clutchEngage)
         }
-    ClutchPrev = %Clutch%
+    ClutchPrev = %ClutchState%
 
 
-    GetKeyState, Joy9,  %ShifterNumber%Joy9
-    GetKeyState, Joy10, %ShifterNumber%Joy10
-    GetKeyState, Joy11, %ShifterNumber%Joy11
-    GetKeyState, Joy12, %ShifterNumber%Joy12
-    GetKeyState, Joy13, %ShifterNumber%Joy13
-    GetKeyState, Joy14, %ShifterNumber%Joy14
-    GetKeyState, Joy15, %ShifterNumber%Joy15
+    GetKeyState, Gear1, %ShifterNumber%%Shifter1%
+    GetKeyState, Gear2, %ShifterNumber%%Shifter2%
+    GetKeyState, Gear3, %ShifterNumber%%Shifter3%
+    GetKeyState, Gear4, %ShifterNumber%%Shifter4%
+    GetKeyState, Gear5, %ShifterNumber%%Shifter5%
+    GetKeyState, Gear6, %ShifterNumber%%Shifter6%
+    GetKeyState, GearR, %ShifterNumber%%ShifterR%
 
     KeyToHoldDownPrev = %KeyToHoldDown%  ; Prev now holds the key that was down before (if any).
 
-    if       Joy9 = D
+    if       Gear1 = D
         KeyToHoldDown = Numpad1
-    else if Joy10 = D
+    else if Gear2 = D
         KeyToHoldDown = Numpad2
-    else if Joy11 = D
+    else if Gear3 = D
         KeyToHoldDown = Numpad3
-    else if Joy12 = D
+    else if Gear4 = D
         KeyToHoldDown = Numpad4
-    else if Joy13 = D
+    else if Gear5 = D
         KeyToHoldDown = Numpad5
-    else if Joy14 = D
+    else if Gear6 = D
         KeyToHoldDown = Numpad6
-    else if Joy15 = D
+    else if GearR = D
         KeyToHoldDown = Numpad9
     else
         KeyToHoldDown = Numpad0
@@ -312,4 +322,55 @@ WatchClutch:
     SetKeyDelay -1  ; Avoid delays between keystrokes.
     if KeyToHoldDownPrev   ; There is a previous key to release.
         Send, {%KeyToHoldDownPrev% up}  ; Release it.
+    return
+    
+    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+    
+    ShowButtons:
+    
+    SetFormat, float, 03  ; Omit decimal point from axis position percentages. 
+    
+    neutral := "Neutral"
+
+    Loop, %ForwardGears%
+    {
+        gear = Shifter%a_index%
+        GetKeyState, Gear%a_index%, %ShifterNumber%%gear%
+        _i = %a_index%
+        joyButton := _i-1 + firstGearJoyButton
+        _gear = %ShifterNumber%Joy%joyButton%
+        GetKeyState, Gear%a_index%, %ShifterNumber%Joy%joyButton%
+        if Gear%a_index% = D
+            {
+            Gear%a_index% := "Selected"
+            neutral := ""
+            }
+        else
+            {
+            Gear%a_index% := ""
+            }
+    } 
+
+    GetKeyState, Clutch,%ClutchNumber%%ClutchAxis%
+    GetKeyState, GearR, %ShifterNumber%%ShifterR%
+    GetKeyState, Esc,   Escape
+
+    if GearR = D
+        {
+        GearR := "Selected"
+        neutral := ""
+        }
+    else
+        {
+        GearR := ""
+        }
+
+    if Clutch < %ClutchEngaged%
+        ClutchState := "disengaged"
+    else
+        ClutchState := "engaged"
+
+    ToolTip, Test Mode`n`nClutch: %Clutch% %ClutchState%`nGear 1: %Gear1%`nGear 2: %Gear2%`nGear 3: %Gear3%`nGear 4: %Gear4%`nGear 5: %Gear5%`nGear 6: %Gear6%`nGear R: %GearR%`n%neutral%`n`nEsc to exit  
+    if Esc = D
+        ExitApp
     return
