@@ -25,10 +25,12 @@ ClutchAxis = JoyU           ; R U V or Z
 
 ShifterNumber  =    1       ; Shifter port
 ClutchNumber   =    1       ; Clutch port
+ReverseClutchAxis = false   ; If true then the clutch input goes from 100 (down) to 0 (up)
 
 TestMode       =    false   ; If true then show shifter and clutch operation
 
 ClutchEngaged  =    90      ; (0 - 100) the point in the travel where the clutch engages
+                            ; if ReverseClutchAxis then ClutchEngaged = 10
 doubleDeclutch =    false   ; Not yet implemented
 reshift =           true    ; If true then neutral has to be selected before
                             ; retrying failed change. If false then just have

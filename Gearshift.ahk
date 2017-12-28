@@ -11,7 +11,7 @@
 ; This is a script for https://autohotkey.com/
 ; Install that then double click on Gearshift.ahk before loading rF2.
 ;
-; V1.3 tjw 2017-12-13
+; V1.4 tjw 2017-12-28
 
 #Persistent  ; Keep this script running until the user explicitly exits it.
 
@@ -24,6 +24,7 @@ Shifter5 = Joy13
 Shifter6 = Joy14
 ShifterR = Joy15
 ClutchAxis = JoyU           ; R U V or Z
+ReverseClutchAxis = false   ; If true then the clutch input goes from 100 (down) to 0 (up)
 
 ShifterNumber  =    1       ; Shifter port
 ClutchNumber   =    1       ; Clutch port
@@ -31,6 +32,7 @@ ClutchNumber   =    1       ; Clutch port
 TestMode       =    false   ; If true then show shifter and clutch operation
 
 ClutchEngaged  =    90      ; (0 - 100) the point in the travel where the clutch engages
+                            ; if ReverseClutchAxis then ClutchEngaged = 10
 doubleDeclutch =    false   ; Not yet implemented
 reshift =           true    ; If true then neutral has to be selected before
                             ; retrying failed change. If false then just have
@@ -263,8 +265,17 @@ WatchClutch:
 
     GetKeyState, Clutch, %ClutchNumber%%ClutchAxis%
     ; Clutch 100 is up, 0 is down to the floor
-    if Clutch < %ClutchEngaged%
-        ClutchState = 0  ; clutch is disengaged
+    ; Unless ReverseClutchAxis is true when it's the opposite.
+    if ReverseClutchAxis = false
+        {
+        if Clutch < %ClutchEngaged%
+            ClutchState = 0  ; clutch is disengaged
+        }
+    else
+        {
+    	if Clutch > %ClutchEngaged%
+            ClutchState = 0  ; clutch is disengaged
+        }
     if ClutchState != %ClutchPrev%
         {
         if ClutchState = 0
