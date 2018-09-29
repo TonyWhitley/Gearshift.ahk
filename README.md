@@ -1,4 +1,4 @@
-# Superseded by https://github.com/TonyWhitley/gearshift.ahk
+# Superseded by https://github.com/TonyWhitley/gearshift
 
 # Gearshift.ahk
 Inspired by the "Grinding Tranny Mod" (http://www.richardjackett.com/grindingtranny) this is an AutoHotkey script that monitors a shifter and clutch and if a gear change is not done properly it repeatedly sends a "Neutral" key press to prevent the gear being selected and sounds a graunching noise. Designed for rFactor 2 but should work with any game (briefly tested with rFactor).
